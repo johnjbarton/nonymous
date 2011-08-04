@@ -1,0 +1,59 @@
+<html>
+<script type="text/javascript">
+var reparseScripts = {
+        
+  request: function(url) {
+    var req = new XMLHttpRequest();
+    req.open("GET", url, true);
+    req.onreadystatechange = this.awaitResponse;
+    req.send(); // async
+  },
+
+  awaitResponse: function(event) {
+    // |this| is request object
+    if (this.readyState === 4) {
+      if(this.status === 200) {
+        if (this.response != null) {
+          reparseScripts.testOne(this.response);
+        } else {
+          console.error("Server returned 200 ok, but it gave no response object");          
+        }
+      } else {
+        console.error("Server error "+this.status, this, event);
+      }
+    } // else wait for another call
+  },
+  
+  testOne: function(src) {
+    console.log("testOne ", src);
+    var ast = exports.parse(src);
+    console.log("testOne ast", ast);
+    
+  },
+};
+var exports = {};
+
+window.addEventListener('load', function testAll() {
+  console.log('load');
+  var scripts = document.getElementsByTagName("script");
+  for(var i = 0; i < scripts.length; i++) {
+    var aScript = scripts[i];
+    var scrAttr = aScript.getAttribute('src'); 
+    if (scrAttr && scrAttr.split('/')[0] === "tests") {
+      console.log("found a test "+aScript.getAttribute('src'));
+      reparseScripts.request(scrAttr);
+    }
+  }
+
+}, false);
+</script>
+<script type="text/javascript" src="uglify/lib/parse-js.js"></script>
+<script type="text/javascript" src="foc.js"></script>
+<script type="text/javascript" src="tests/ObjectPropertyInitializer.js"></script>
+
+
+<body>
+<h1>Function-Object Creation naming algorithm implementation in Uglify</h1>
+
+</body>
+</html>
