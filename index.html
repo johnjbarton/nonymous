@@ -1,4 +1,6 @@
 <html>
+<head>
+<title>uglifoc: Uglify Implementation of Function-Object Creation Naming </title>
 <script type="text/javascript">
 var reparseScripts = {
         
@@ -26,7 +28,11 @@ var reparseScripts = {
   
   testOne: function(src) {
     console.log("testOne ", src);
+    // We parse the JavaScript ...
     var ast = exports.parse(src);
+    // and search the resulting syntax tree for function body nodes.
+    
+
     console.log("testOne ast", ast);
     
   },
@@ -51,9 +57,14 @@ window.addEventListener('load', function testAll() {
 <script type="text/javascript" src="foc.js"></script>
 <script type="text/javascript" src="tests/ObjectPropertyInitializer.js"></script>
 
-
+</head>
 <body>
 <h1>Function-Object Creation naming algorithm implementation in Uglify</h1>
+<p>
+Splash Wavefront 2011 Paper:
+<a href="http://code.google.com/p/querypoint-debugging/downloads/detail?name=NamingJSFunctions.pdf">
+Naming Anonymous JavaScript Functions
+</a>, by Salman Mirghasemi,  John J. Barton, and Prof. Claude Petitpierre
 
 </body>
 </html>
