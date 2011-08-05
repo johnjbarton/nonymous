@@ -1,0 +1,18 @@
+{
+  "name": "dandy",
+  "description": "Error handling and logging utilities",
+  "version": "0.0.2",
+  "homepage": "http://github.com/joehewitt/dandy",
+  "repository": {
+      "type": "git",
+      "url" : "http://github.com/joehewitt/dandy.git"
+  },
+  "keywords": [],
+  "author": "Joe Hewitt <joe@joehewitt.com>",
+  "contributors": [],
+  "dependencies": {      
+  },
+  "engines": { "node": ">=0.4.0" },
+  "main": "./dandy",
+  "directories": {}
+}
