@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>uglifoc: Uglify Implementation of Function-Object Creation Naming </title>
+<title>uglifoc: Uglify Implementation of Function-Object Consumption Naming </title>
 <script type="text/javascript">
 var reparseScripts = {
         
@@ -30,17 +30,47 @@ var reparseScripts = {
     console.log("testOne ", src);
     // We parse the JavaScript ...
     var ast = exports.parse(src);
-    // and search the resulting syntax tree for function body nodes.
-    
-
     console.log("testOne ast", ast);
+    // and search the resulting syntax tree for function body nodes.
+    ast = exports.transform(ast, [uglifoc.foc], true)
+    
+    renderAsElementTree(ast);
     
   },
 };
+
+function renderAsElementTree(ast, tree) {
+  tree = tree || document.getElementById("tree");
+  if (!ast) {
+    put(tree, 'li', ast+" "+typeof(ast));
+    return;
+  }
+  if (typeof(ast) === 'string') {
+    put(tree, 'li', ast+" "+typeof(ast));
+    return;
+  }
+  if (typeof(ast[0]) === 'string') {
+    var branch = put(tree, "li", ast[0]+" "+typeof(ast));
+    var beginRecursionAt = 1;
+  } else {
+    var branch = put(tree, "li", "statements");
+    var beginRecursionAt = 0;
+  }
+    
+  if (ast.length) {
+    branch = put(branch, "ul");
+    for (var i = beginRecursionAt; i < ast.length; i++) {
+      renderAsElementTree(ast[i], branch);
+    }  
+  }
+  
+}
+
 var exports = {};
 
 window.addEventListener('load', function testAll() {
   console.log('load');
+
   var scripts = document.getElementsByTagName("script");
   for(var i = 0; i < scripts.length; i++) {
     var aScript = scripts[i];
@@ -52,19 +82,28 @@ window.addEventListener('load', function testAll() {
   }
 
 }, false);
+
+function require(module) {
+  if (!window.module)
+    console.log(module+" module is required");
+}
 </script>
 <script type="text/javascript" src="uglify/lib/parse-js.js"></script>
+<script type="text/javascript" src="dandy/dandy.js"></script>
+<script type="text/javascript" src="transformjs/lib/transformjs.js"></script>
+<script type="text/javascript" src="put-selector/put.js"></script>
 <script type="text/javascript" src="foc.js"></script>
 <script type="text/javascript" src="tests/ObjectPropertyInitializer.js"></script>
 
 </head>
 <body>
-<h1>Function-Object Creation naming algorithm implementation in Uglify</h1>
+<h1>Function-Object Consumption naming algorithm implementation in Uglify</h1>
 <p>
 Splash Wavefront 2011 Paper:
 <a href="http://code.google.com/p/querypoint-debugging/downloads/detail?name=NamingJSFunctions.pdf">
 Naming Anonymous JavaScript Functions
 </a>, by Salman Mirghasemi,  John J. Barton, and Prof. Claude Petitpierre
-
+</p>
+<ul id='tree'></ul>
 </body>
 </html>
