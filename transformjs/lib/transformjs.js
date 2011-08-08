@@ -45,7 +45,7 @@ var typeMap = {
  * source - JavaScript source
  * filters - array of functions like `function(node, next) {}`
  */
-exports.transform = function(source, filters) {
+exports.transform = function(source, filters, addParents) {
     // Parse into Uglify's AST of nested arrays or treat source as an existing AST
     var ast = typeof(source) == 'string' ? uglify.parser.parse(source) : source;
     // logDeep(ast[1]);
@@ -55,6 +55,8 @@ exports.transform = function(source, filters) {
         var nodes = arraysToNodes(ast[1]);
         // logDeep(nodes);
 
+        if (addParents)
+          nodes = adoptOrphans(nodes);
         // Traverse hierarchy, calling filters for each node
         nodes = visit(nodes);
         // logDeep(nodes);
@@ -92,9 +94,34 @@ exports.transform = function(source, filters) {
                 }
             }
 
-            return next();          
+            return next();
         }
     }
+    
+    function adoptOrphans(node) {
+      if (!node) {
+          return node;
+      } else if (node instanceof Array) {
+        var newNodes = [];
+        for (var i = 0; i < node.length; ++i) {
+            var newNode = adoptOrphans(node[i]);
+            if (newNode) {
+                newNode.parent = node;
+                console.log("set parent ", newNode);
+                newNodes.push(newNode);
+            }
+        }
+        return newNodes;
+    } else {
+        function adoptWalkees(child) {
+          child.parent = node;
+          adoptOrphans(child);
+          console.log("set parent via walkNode ", child);
+          return child;
+        }
+        return walkNode(node, adoptWalkees);
+    }
+  }
 }
 
 /** 
