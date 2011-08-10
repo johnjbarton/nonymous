@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>uglifoc: Uglify Implementation of Function-Object Consumption Naming </title>
+<title>Uglifoc: Uglify Implementation of Function-Object Consumption Naming </title>
 <script type="text/javascript">
 var reparseScripts = {
         
@@ -32,9 +32,10 @@ var reparseScripts = {
     var ast = exports.parse(src);
     console.log("testOne ast", ast);
     // and search the resulting syntax tree for function body nodes.
-    ast = exports.transform(ast, [uglifoc.foc], true)
+    Uglifoc.FunctionNamer.getNames(ast);
+    //ast = exports.transform(ast, [Uglifoc.foc.bind(Uglifoc)], true)
     
-    renderAsElementTree(ast);
+    //renderAsElementTree(ast);
     
   },
 };
@@ -89,11 +90,11 @@ function require(module) {
 }
 </script>
 <script type="text/javascript" src="uglify/lib/parse-js.js"></script>
-<script type="text/javascript" src="dandy/dandy.js"></script>
-<script type="text/javascript" src="transformjs/lib/transformjs.js"></script>
 <script type="text/javascript" src="put-selector/put.js"></script>
 <script type="text/javascript" src="foc.js"></script>
-<script type="text/javascript" src="tests/ObjectPropertyInitializer.js"></script>
+<!-- <script type="text/javascript" src="tests/Functions.js"></script> -->
+<script type="text/javascript" src="tests/paperFigure1.js"></script>
+<!--  <script type="text/javascript" src="tests/ObjectPropertyInitializer.js"></script>  
 
 </head>
 <body>
