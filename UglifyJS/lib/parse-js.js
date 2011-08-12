@@ -747,15 +747,16 @@ function parse($TEXT, exigent_mode, embed_tokens) {
                 return ex;
         };
 
-        function add_tokens(str, start, end) {
-                return str instanceof NodeWithToken ? str : new NodeWithToken(str, start, end);
+        function add_tokens(ast, start, end) {
+                ast.loc = ast.loc || new NodeWithToken(ast[0], start, end);
+                return ast;
         };
 
         function maybe_embed_tokens(parser) {
                 if (embed_tokens) return function() {
                         var start = S.token;
                         var ast = parser.apply(this, arguments);
-                        ast[0] = add_tokens(ast[0], start, prev());
+                        ast = add_tokens(ast, start, prev());
                         return ast;
                 };
                 else return parser;
@@ -1278,7 +1279,7 @@ function array_to_hash(a) {
 };
 
 function slice(a, start) {
-        return Array.prototype.slice.call(a, start == null ? 0 : start);
+        return Array.prototype.slice.call(a, start || 0);
 };
 
 function characters(str) {
