@@ -107,16 +107,16 @@ exports.transform = function(source, filters, addParents) {
             var newNode = adoptOrphans(node[i]);
             if (newNode) {
                 newNode.parent = node;
-                console.log("set parent ", newNode);
                 newNodes.push(newNode);
             }
         }
         return newNodes;
     } else {
         function adoptWalkees(child) {
+          if (!child)
+            return;
           child.parent = node;
           adoptOrphans(child);
-          console.log("set parent via walkNode ", child);
           return child;
         }
         return walkNode(node, adoptWalkees);
@@ -185,7 +185,7 @@ function PAIRS(val, from) {
 
 function CASES(val, from) {
     if (from) {
-        return casesToNodes(val, 'pair');
+        return casesToNodes(val);
     } else {
         return nodesToCases(val, 'pair');
     }
