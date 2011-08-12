@@ -6,7 +6,7 @@
  *  
  */
 var Uglifoc = {
-    debug: true,
+    debug: false,
 };
 
 function getType(statement) {
@@ -150,7 +150,11 @@ Uglifoc.FunctionNamer = function() {
       console.log(msg, {namingStack:namingStack});
     }
     var name = Uglifoc.ExpressionNamer.foc(statement, namingStack.slice(0).reverse());
-    console.log(" and the name is.... "+name);
+    if (Uglifoc.debug) {
+      console.log(" and the name is.... "+name);
+    }
+    var loc = statement.loc.start;
+    Uglifoc.names.push({name:name, line: loc.line, col: loc.col, pos: loc.pos});
   }
   
   function getBranches(statement) {
@@ -196,9 +200,13 @@ Uglifoc.FunctionNamer = function() {
   }
   
   // ----------------------------------------------------------------------------------------------
-  
+  // API: 
+  //  @param: ast output of UglifyJS parser-js parse.
+  //  @return: [{name: "foo", line: 4, col: 43, pos: 120}, ...]
   function getNames(ast) {
+    Uglifoc.names = [];
     seekFunctionsInStatements(ast[1]); // "toplevel" is one statement
+    return Uglifoc.names;
   }
 
   return {getNames: getNames};
@@ -378,7 +386,7 @@ Uglifoc.ExpressionNamer = function() {
       } else {
         // We should never run out of parents because the toplevel is a statement
         // and thus should have failed the expression test.
-        if (debug) {
+        if (Uglifoc.debug) {
           console.error("Uglifoc NodeIterater ran out of parents while looking at expressions", this);
         }
         throw new Error("Function naming algorithm or parser error");
@@ -388,7 +396,9 @@ Uglifoc.ExpressionNamer = function() {
     
     getNextNode: function() {
       var nextNode = this.nodes[this.index++]; 
-      console.log("foc next node "+getType(nextNode), {nextNode: nextNode});
+      if (Uglifoc.debug) {
+        console.log("foc next node "+getType(nextNode), {nextNode: nextNode});  
+      }
       
       return nextNode;
     },
@@ -396,7 +406,7 @@ Uglifoc.ExpressionNamer = function() {
     getParentNode: function(node) {
       var index = this.nodes.indexOf(node);
       if (index === -1 || index === (this.nodes.length - 2) ) {
-        if (debug) {
+        if (Uglifoc.debug) {
           console.error("Uglifoc no parent for node", {NodeIterator: this, node: node}); 
         }
         throw new Error("Function naming algorithm error, no parent for node");
@@ -482,7 +492,9 @@ Uglifoc.ExpressionNamer = function() {
       functionInfo.id = getNameExpression(functionInfo.parent);
       summary.push(functionInfo);
     }
-    console.log("FOC summary ", summary);
+    if (Uglifoc.debug) {
+      console.log("FOC summary ", summary);  
+    }
     
     return convertToName(summary.reverse());
   }

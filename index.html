@@ -7,35 +7,38 @@ var reparseScripts = {
   request: function(url) {
     var req = new XMLHttpRequest();
     req.open("GET", url, true);
-    req.onreadystatechange = this.awaitResponse;
+    req.onreadystatechange = this.awaitResponse(url);
     req.send(); // async
   },
 
-  awaitResponse: function(event) {
-    // |this| is request object
-    if (this.readyState === 4) {
-      if(this.status === 200) {
-        if (this.response != null) {
-          reparseScripts.testOne(this.response);
+  awaitResponse: function(url) {
+    return function(event) {
+      // |this| is request object
+      if (this.readyState === 4) {
+        if(this.status === 200) {
+          if (this.response != null) {
+            reparseScripts.reportNames(url, this.response);
+          } else {
+            console.error("Server returned 200 ok, but it gave no response object");          
+          }
         } else {
-          console.error("Server returned 200 ok, but it gave no response object");          
+          console.error("Server error "+this.status, this, event);
         }
-      } else {
-        console.error("Server error "+this.status, this, event);
-      }
-    } // else wait for another call
+      } // else wait for another call
+    }
   },
   
-  testOne: function(src) {
-    console.log("testOne ", src);
+  reportNames: function(url, src) {
+    console.log("testOne "+url, src);
     // We parse the JavaScript ...
-    var ast = exports.parse(src);
-    console.log("testOne ast", ast);
-    // and search the resulting syntax tree for function body nodes.
-    Uglifoc.FunctionNamer.getNames(ast);
-    //ast = exports.transform(ast, [Uglifoc.foc.bind(Uglifoc)], true)
+    var ast = exports.parse(src, false, true);
     
-    //renderAsElementTree(ast);
+    // and search the resulting syntax tree for function body nodes.
+    var names = Uglifoc.FunctionNamer.getNames(ast);
+    for (var i = 0; i < names.length; i++) {
+      var name = names[i];
+      console.log(url+"@"+name.line+"."+name.col+": "+name.name);
+    }
     
   },
 };
@@ -70,14 +73,13 @@ function renderAsElementTree(ast, tree) {
 var exports = {};
 
 window.addEventListener('load', function testAll() {
-  console.log('load');
 
   var scripts = document.getElementsByTagName("script");
   for(var i = 0; i < scripts.length; i++) {
     var aScript = scripts[i];
     var scrAttr = aScript.getAttribute('src'); 
     if (scrAttr && scrAttr.split('/')[0] === "tests") {
-      console.log("found a test "+aScript.getAttribute('src'));
+      //console.log("found a test "+aScript.getAttribute('src'));
       reparseScripts.request(scrAttr);
     }
   }
@@ -94,7 +96,6 @@ function require(module) {
 <script type="text/javascript" src="foc.js"></script>
 <!-- <script type="text/javascript" src="tests/Functions.js"></script> -->
 <script type="text/javascript" src="tests/paperFigure1.js"></script>
-<!--  <script type="text/javascript" src="tests/ObjectPropertyInitializer.js"></script>  
 
 </head>
 <body>
