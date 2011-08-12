@@ -7,6 +7,8 @@
  */
 var Uglifoc = {
     debug: false,
+    isPartOfSep: '.',
+    isContributesToSep: '<',
 };
 
 function getType(statement) {
@@ -447,8 +449,14 @@ Uglifoc.ExpressionNamer = function() {
         continue;
       
       name += info.id || "";
-      name += info.isPartOf ? "." : "";
-      name += info.isContributesTo ? "<" : "";
+      
+      var lastChar = name.substr(-1);
+      if (lastChar !== Uglifoc.isPartOfSep) {
+        name += info.isPartOf ? Uglifoc.isPartOfSep : "";
+      }
+      if (lastChar !== Uglifoc.isContributesToSep) {
+        name += info.isContributesTo ? Uglifoc.isContributesToSep : "";  
+      }
     }
     
     return name;
