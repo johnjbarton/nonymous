@@ -444,26 +444,28 @@ Uglifoc.ExpressionNamer = function() {
     return name;
   }
   
+  var FunctionInfo = function(parent) {
+    this.parent = parent;
+    this.parentType = getType(parent);
+  }
+  
   function foc(node, parents) {
     var summary = [];
     
     var iter = new NodeIterator(node, parents);
     while (iter.hasNextNode()) {
-      var functionInfo = {};
-      var parent = iter.getParentNode(node);
       
-      var parentType = getType(parent);
-      console.log("foc parent type in loop "+parentType);
+      var functionInfo = new FunctionInfo(iter.getParentNode(node));
       
-      if (parentType === 'conditional') {
+      if (functionInfo.parentType === 'conditional') {
         functionInfo.isSameAs = true;
-      } else if (parentType === 'array' || parentType === 'pair') {
+      } else if (functionInfo.parentType === 'array' || functionInfo.parentType === 'pair') {
         functionInfo.isPartOf = true;
       } else {
         functionInfo.isContributesTo = true;
       }
       
-      if (parentType === 'call' && parent[1] !== node) {
+      if (functionInfo.parentType === 'call' && functionInfo.parent[1] !== node) {
         // then the node must be in args
         functionInfo.isCall = true;
         functionInfo.id = getNameExpression(parent);
@@ -473,12 +475,12 @@ Uglifoc.ExpressionNamer = function() {
       summary.push(functionInfo);
       node = iter.getNextNode();
     }
-    
-    var parent = iter.getParentNode(node);
-    var parentType = getType(parent);
-    console.log("foc parent type "+parentType);
-    if (parentType === "assign" || parentType === "decl") {
-      summary.push({isAssignment: true, id: getNameExpression(parent)})  
+    // At this point the node parent is not an expression
+    var functionInfo = new FunctionInfo(iter.getParentNode(node));
+    if (functionInfo.parentType === "assign" || functionInfo.parentType === "decl") {
+      functionInfo.isAssignment = true;
+      functionInfo.id = getNameExpression(functionInfo.parent);
+      summary.push(functionInfo);
     }
     console.log("FOC summary ", summary);
     
