@@ -4,6 +4,7 @@
 <script type="text/javascript">
 var reparseScripts = {
         
+  okStatus: (window.location.protocol === 'file:') ? 0 : 200,
   request: function(url) {
     var req = new XMLHttpRequest();
     req.open("GET", url, true);
@@ -15,7 +16,7 @@ var reparseScripts = {
     return function(event) {
       // |this| is request object
       if (this.readyState === 4) {
-        if(this.status === 200) {
+        if(this.status === reparseScripts.okStatus) {
           if (this.response != null) {
             reparseScripts.reportNames(url, this.response);
           } else {
