@@ -344,7 +344,7 @@ Uglifoc.ExpressionNamer = function() {
     // 'stat', // : ['expr', NODE], statement not expression 
     // 'block', // : ['statements', ARRAY], can't be parent
     // 'var': ['decls', DECLS], can't be a parent, decl can be. 
-    'decl', // : ['left', LITERAL, 'right', NODE],
+    // 'decl', // : ['left', LITERAL, 'right', NODE],
     'pair', // : ['left', LITERAL, 'right', NODE],
     // 'assign': ['um', LITERAL, 'left', NODE, 'right', NODE], statement not expression 
     'unary-prefix', // : ['op', LITERAL, 'expr', NODE],
@@ -397,7 +397,8 @@ Uglifoc.ExpressionNamer = function() {
     },
     
     getNextNode: function() {
-      var nextNode = this.nodes[this.index++]; 
+      this.index += 1;
+      var nextNode = this.nodes[this.index]; 
       if (Uglifoc.debug) {
         console.log("foc next node "+getType(nextNode), {nextNode: nextNode});  
       }
@@ -407,7 +408,7 @@ Uglifoc.ExpressionNamer = function() {
     
     getParentNode: function(node) {
       var index = this.nodes.indexOf(node);
-      if (index === -1 || index === (this.nodes.length - 2) ) {
+      if (index === -1 || index > (this.nodes.length - 2) ) {
         if (Uglifoc.debug) {
           console.error("Uglifoc no parent for node", {NodeIterator: this, node: node}); 
         }
@@ -449,6 +450,11 @@ Uglifoc.ExpressionNamer = function() {
         continue;
       
       name += info.id || "";
+      
+      if (info.isAssignment) {
+        name = name.replace(/([\.<])$/, "");
+        continue;        
+      }
       
       var lastChar = name.substr(-1);
       if (lastChar !== Uglifoc.isPartOfSep) {
