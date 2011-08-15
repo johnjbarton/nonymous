@@ -6,7 +6,7 @@
  *  
  */
 var Uglifoc = {
-    debug: false,
+    debug: true,
     isPartOfSep: '.',
     isContributesToSep: '<',
 };
@@ -29,14 +29,14 @@ Uglifoc.FunctionNamer = function() {
   
   function pushParent(uglyArray) {
     namingStack.push(uglyArray);
-    if (Uglifoc.debug) {
+    if (false && Uglifoc.debug) {
       console.log("namingStack("+namingStack.length+") pushed "+getType(uglyArray));
     }
   }
 
   function popParent() {
     var popped = namingStack.pop();
-    if (Uglifoc.debug) console.log("namingStack("+(namingStack.length)+") popped "+getType(popped));
+    if (false && Uglifoc.debug) console.log("namingStack("+(namingStack.length)+") popped "+getType(popped));
   }
   
   // ----------------------------------------------------------------------------------------------
@@ -57,9 +57,13 @@ Uglifoc.FunctionNamer = function() {
     seekFunctionsInStatements(val);
   };
   
-  var PAIRS = function(val) {
-    // recurse into children
-    seekFunctionsInStatements(val);
+  var PAIRS = function(statements) {
+    // recurse into children, pairs are [[name, node]...]
+    for (var i = 0; i < statements.length; i++) {
+      var statement = statements[i];
+      // ['pair', LITERAL, NODE]
+      seekFunctionsInStatement(['pair', statement[0], statement[1]]);
+    } 
   };
 
   var CATCH = function(val) {
@@ -251,11 +255,11 @@ Uglifoc.ExpressionNamer = function() {
   }
   
   var getProp = function(uglyArray) {
-    return generateName(uglyArray[1]) + uglyArray[2];
+    return generateName(uglyArray[1]) + '.' + uglyArray[2];
   }
   
   var getElem = function(uglyArray) {
-    return generateName(uglyArray[1]) + generateName(uglyArray[2]);
+    return generateName(uglyArray[1]) + '[' + generateName(uglyArray[2]) +']';
   }
   
   // ----------------------------------------------------------------------------------------------
@@ -305,7 +309,7 @@ Uglifoc.ExpressionNamer = function() {
   function getNameExpression(declFunctionCallOrAssignment) {
     var name = "";
     var type = getType(declFunctionCallOrAssignment);
-    if (type === 'decl') { // 'decl': ['left', LITERAL, 'right', NODE],
+    if (type === 'decl' || type === 'pair') { // 'decl': ['left', LITERAL, 'right', NODE],
       // 'left node is literal, just return it as name
       var name = declFunctionCallOrAssignment[1];   
       return name;
@@ -328,8 +332,17 @@ Uglifoc.ExpressionNamer = function() {
     return generator(uglyArray);
   }
 
-  function getArgSummary(node) {
-    return "we should implement getArgSummary";
+  function getArgSummary(args, node) {
+    var summary = "";
+    for(var i = 0; i < args.length; i++) {
+      var arg = args[i];
+      if (arg === node) {
+        continue;
+      } else {
+        summary += generateName(arg) + '-';
+      }
+    }
+    return summary.substr(0,9);
   }
   
   // The possible parent node types for forming expression-names
@@ -345,7 +358,7 @@ Uglifoc.ExpressionNamer = function() {
     // 'block', // : ['statements', ARRAY], can't be parent
     // 'var': ['decls', DECLS], can't be a parent, decl can be. 
     // 'decl', // : ['left', LITERAL, 'right', NODE],
-    'pair', // : ['left', LITERAL, 'right', NODE],
+    //'pair', // : ['left', LITERAL, 'right', NODE],
     // 'assign': ['um', LITERAL, 'left', NODE, 'right', NODE], statement not expression 
     'unary-prefix', // : ['op', LITERAL, 'expr', NODE],
     'unary-postfix', // : ['op', LITERAL, 'expr', NODE],
@@ -444,7 +457,8 @@ Uglifoc.ExpressionNamer = function() {
     for(var i = 0; i < infos.length; i++) {
       var info = infos[i];
       if (info.isCall) {
-         console.log("FOC found isCall");
+        name = name || name + info.id + '(' + info.argSummary + ')';
+        continue;
       }
       if (name.isSameAs) 
         continue;
@@ -468,9 +482,24 @@ Uglifoc.ExpressionNamer = function() {
     return name;
   }
   
-  var FunctionInfo = function(parent) {
-    this.parent = parent;
-    this.parentType = getType(parent);
+  var FunctionInfo = function(iter, node) {
+    this.parent = iter.getParentNode(node);
+    this.parentType = getType(this.parent);
+    
+    if (this.parentType === 'conditional') {
+      this.isSameAs = true;
+    } else if (this.parentType === 'array' || this.parentType === 'pair') {
+      this.isPartOf = true;
+    } else {
+      this.isContributesTo = true;
+    }
+    
+    if (this.parentType === 'call' && this.parent[1] !== node) {
+      // then the node must be in args
+      this.isCall = true;
+      this.id = generateName(this.parent[1]);
+      this.argSummary = getArgSummary(this.parent[2], node);
+    }
   }
   
   function foc(node, parents) {
@@ -478,30 +507,15 @@ Uglifoc.ExpressionNamer = function() {
     
     var iter = new NodeIterator(node, parents);
     while (iter.hasNextNode()) {
-      
-      var functionInfo = new FunctionInfo(iter.getParentNode(node));
-      
-      if (functionInfo.parentType === 'conditional') {
-        functionInfo.isSameAs = true;
-      } else if (functionInfo.parentType === 'array' || functionInfo.parentType === 'pair') {
-        functionInfo.isPartOf = true;
-      } else {
-        functionInfo.isContributesTo = true;
-      }
-      
-      if (functionInfo.parentType === 'call' && functionInfo.parent[1] !== node) {
-        // then the node must be in args
-        functionInfo.isCall = true;
-        functionInfo.id = getNameExpression(parent);
-        functionInfo.argSummary = getArgSummary(parent);
-      }
-      
+      var functionInfo = new FunctionInfo(iter, node);
       summary.push(functionInfo);
       node = iter.getNextNode();
     }
     // At this point the node parent is not an expression
-    var functionInfo = new FunctionInfo(iter.getParentNode(node));
-    if (functionInfo.parentType === "assign" || functionInfo.parentType === "decl") {
+    var functionInfo = new FunctionInfo(iter, node);
+    if (functionInfo.parentType === "assign" ||
+            functionInfo.parentType === "decl" ||
+            functionInfo.parentType === "pair") {
       functionInfo.isAssignment = true;
       functionInfo.id = getNameExpression(functionInfo.parent);
       summary.push(functionInfo);
