@@ -31,7 +31,7 @@ var reparseScripts = {
   reportNames: function(url, src) {
     console.log("testOne "+url, src);
     // We parse the JavaScript ...
-    var ast = exports.parse(src, false, true);
+    var ast = exports.parse(src, false, ".loc");
     
     // and search the resulting syntax tree for function body nodes.
     var names = Uglifoc.FunctionNamer.getNames(ast);

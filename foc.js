@@ -12,7 +12,7 @@ var Uglifoc = {
 };
 
 function getType(statement) {
-  return statement[0];
+  return statement[0].toString();  // if embed_tokens === true, type is NodeWithToken 
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -30,13 +30,13 @@ Uglifoc.FunctionNamer = function() {
   function pushParent(uglyArray) {
     namingStack.push(uglyArray);
     if (Uglifoc.debug) {
-      console.log("namingStack("+namingStack.length+") pushed "+uglyArray[0]);
+      console.log("namingStack("+namingStack.length+") pushed "+getType(uglyArray));
     }
   }
 
   function popParent() {
     var popped = namingStack.pop();
-    if (Uglifoc.debug) console.log("namingStack("+(namingStack.length)+") popped "+popped[0]);
+    if (Uglifoc.debug) console.log("namingStack("+(namingStack.length)+") popped "+getType(popped));
   }
   
   // ----------------------------------------------------------------------------------------------
@@ -64,7 +64,7 @@ Uglifoc.FunctionNamer = function() {
 
   var CATCH = function(val) {
     // TODO rewrite as ['catch', 'name', 'block']
-    pushParent(val[0]);
+    pushParent(getType(val));
     seekFunctionsInStatements(val[1]);
     popParent();
   };
@@ -75,7 +75,7 @@ Uglifoc.FunctionNamer = function() {
     for (var i = 0; i < cases.length; i++) {
       var aCase = cases[i];
       // ['case', 'condition',  'block']
-      var caseStatement = ['case', aCase[0], aCase[1]];
+      var caseStatement = ['case', getType(aCase), aCase[1]];
       caseStatements.push(caseStatement);
     }
     seekFunctionsStatements(caseStatements);
@@ -99,7 +99,7 @@ Uglifoc.FunctionNamer = function() {
   // and then operate on the node's branch data (cell 1,...) based on the entry. Each entry has two 
   // values for each branch data value: a label for the branch and an action for that branch.
   // Blocks, array entries, declaration lists, switch cases, and catch clauses are all special 
-  // cases. The listy special cases are array of arrays (.length but no type at [0]).
+  // cases. The listy special cases are array of arrays (.length but no type).
   // This entire approach copies https://github.com/joehewitt/transformjs/lib/transformjs.js
   
   var typeToBranch = {  // BranchName/BranchAction for each Uglify statement type
@@ -146,7 +146,7 @@ Uglifoc.FunctionNamer = function() {
     if (Uglifoc.debug) {
       var msg = "setFunctionName found a function when naming stack depth "+namingStack.length+"[";
       namingStack.forEach(function pushName(uglyArray){
-        msg += uglyArray[0]+", ";
+        msg += getType(uglyArray)+", ";
       });
       msg += "]";
       console.log(msg, {namingStack:namingStack});
@@ -155,7 +155,7 @@ Uglifoc.FunctionNamer = function() {
     if (Uglifoc.debug) {
       console.log(" and the name is.... "+name);
     }
-    var loc = statement.loc.start;
+    var loc = (statement.loc || statement[0]).start;
     Uglifoc.names.push({name:name, line: loc.line, col: loc.col, pos: loc.pos});
   }
   
@@ -225,8 +225,8 @@ Uglifoc.ExpressionNamer = function() {
   }
   
   var reportError = function(uglyArray) {
-    console.error("Function naming algorithm error, no expression algorithm for node ", uglyArray[0]);
-    throw new Error("Function naming algorithm error, no expression algorithm for node "+uglyArray[0]);
+    console.error("Function naming algorithm error, no expression algorithm for node ", getType(uglyArray));
+    throw new Error("Function naming algorithm error, no expression algorithm for node "+getType(uglyArray));
     // or just return 'failed'
   }
   
@@ -304,7 +304,7 @@ Uglifoc.ExpressionNamer = function() {
   // so we add a case
   function getNameExpression(declFunctionCallOrAssignment) {
     var name = "";
-    var type = declFunctionCallOrAssignment[0];
+    var type = getType(declFunctionCallOrAssignment);
     if (type === 'decl') { // 'decl': ['left', LITERAL, 'right', NODE],
       // 'left node is literal, just return it as name
       var name = declFunctionCallOrAssignment[1];   
@@ -324,7 +324,7 @@ Uglifoc.ExpressionNamer = function() {
   }
   
   function generateName(uglyArray) {
-    var generator = parentTypeToExpressionGenerator[uglyArray[0]];
+    var generator = parentTypeToExpressionGenerator[getType(uglyArray)];
     return generator(uglyArray);
   }
 

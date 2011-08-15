@@ -663,6 +663,10 @@ function NodeWithToken(str, start, end) {
 
 NodeWithToken.prototype.toString = function() { return this.name; };
 
+// embed_tokens === true: first element is NodeWithToken,
+//              === ".loc": array .loc property set to NodeWithToken,
+//              else first element is string name of node.
+
 function parse($TEXT, exigent_mode, embed_tokens) {
 
         var S = {
@@ -747,16 +751,26 @@ function parse($TEXT, exigent_mode, embed_tokens) {
                 return ex;
         };
 
-        function add_tokens(ast, start, end) {
+        function add_tokens(str, start, end) {
+                return str instanceof NodeWithToken ? str : new NodeWithToken(str, start, end);
+        };
+        
+        function append_tokens(ast, start, end) {
                 ast.loc = ast.loc || new NodeWithToken(ast[0], start, end);
                 return ast;
         };
 
         function maybe_embed_tokens(parser) {
-                if (embed_tokens) return function() {
+                if (embed_tokens === true) return function() {
                         var start = S.token;
                         var ast = parser.apply(this, arguments);
-                        ast = add_tokens(ast, start, prev());
+                        ast[0] = add_tokens(ast[0], start, prev());
+                        return ast;
+                };
+                else if (embed_tokens === ".loc") return function() {
+                        var start = S.token;
+                        var ast = parser.apply(this, arguments);
+                        ast = append_tokens(ast, start, prev());
                         return ast;
                 };
                 else return parser;
