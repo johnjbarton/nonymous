@@ -7,5 +7,3 @@ var anObject = {
     return true;
   }
 };
-
-anObject.aPropertyInitialized.displayName = "anObject.aPropertyInitialized";
