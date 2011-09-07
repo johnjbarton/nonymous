@@ -106,7 +106,7 @@ function getType(statement) {
       var caseStatement = ['case', getType(aCase), aCase[1]];
       caseStatements.push(caseStatement);
     }
-    seekFunctionsInStatements(caseStatements);
+    seekFunctionsStatements(caseStatements);
   };
   
   var DECLS = function(declarations) {
