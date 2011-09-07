@@ -148,7 +148,7 @@ Naming Anonymous JavaScript Functions
     <pre class="output"></pre>
   </td>
   <td>
-<pre class="input" id="paperFig1">
+<pre class="input" id="objects">
   // Case 1: Object Property Initializer
 
 var anObject = {
@@ -164,7 +164,7 @@ var anObject = {
     <pre class="output"></pre>
   </td>
   <td>
-<pre class="input" id="paperFig1">
+<pre class="input" id="assignment">
 var x = 1;
 x = function(){};                                                 // x
 
@@ -173,6 +173,17 @@ x = window.addEventListener("something", {onFoo: function(){}});  // x&lt;onFoo
 x = window.addEventListener('load', function(event) {}, false);   // x&lt;(load-fal)
 
 addEventListener('load', function(event) {}, false);  // addEventListener(load-fals);
+</pre>
+</td>
+</tr>
+<tr>
+  <td>
+    <pre class="output"></pre>
+  </td>
+  <td>
+<pre class="input" id="define">
+define(["uglify-js", "lib/nonymous/nonymous.js"], function(mUglifyJs, mNonymous) {
+});
 </pre>
 </td>
 </tr>
