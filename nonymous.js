@@ -34,7 +34,7 @@ var Nonymous = {
     isPartOfSep: '.',
     isContributesToSep: '<',
     isInArgSummarySep: '^',
-    argSummaryClip: 9,
+    argSummaryClip: 15,
 };
 
 function getType(uglyArray) {
@@ -171,7 +171,7 @@ function getType(uglyArray) {
   // As we walk down we find functions and process them into names here.
   //  statement type is 'function' or 'defun'
   function setFunctionName(statement) {
-    if (Nonymous.debug) {
+    if (Nonymous.debug === 'trace') {
       var msg = "setFunctionName found a function when naming stack depth "+namingStack.length+"[";
       namingStack.forEach(function pushName(uglyArray){
         msg += getType(uglyArray)+", ";
@@ -184,7 +184,7 @@ function getType(uglyArray) {
       name = Nonymous.getExpressionName(statement, namingStack.slice(0).reverse());
     }
     
-    if (Nonymous.debug) {
+    if (Nonymous.debug === 'trace') {
       console.log(" and the name is.... "+name);
     }
     var loc = (statement.loc || statement[0]).start;
@@ -203,7 +203,9 @@ function getType(uglyArray) {
 
     var branches = getBranches(statement);
     if (!branches) {
-      console.log("Nonymous ERROR: no branches for statement "+statement);
+      if (Nonymous.debug) {
+        console.log("Nonymous ERROR: no branches for statement "+statement);
+      }
       return;
     }
     
@@ -236,9 +238,11 @@ function getType(uglyArray) {
   // ----------------------------------------------------------------------------------------------
   // API: 
   //  @param: ast output of UglifyJS parser-js parse.
+  //  @param: true report errors, 'trace' log trace, else suppress
   //  @return: [{name: "foo", line: 4, col: 43, pos: 120}, ...]
-  Nonymous.getNames = function(ast) {
+  Nonymous.getNames = function(ast, debug) {
     Nonymous.names = [];
+    Nonymous.debug = debug;
     seekFunctionsInStatements(ast[1]); // "toplevel" is one statement
     return Nonymous.names;
   };
@@ -261,6 +265,11 @@ function getType(uglyArray) {
     throw new Error("Function naming algorithm error, no expression algorithm for node "+getType(uglyArray));
     // or just return 'failed'
   };
+  
+  // The type node is not useful in forming a name
+  var skipParent = function(uglyArray) {
+    return "";
+  }
   
   function generateName(uglyArray) {
     var generator = parentTypeToExpressionGenerator[getType(uglyArray)];
@@ -321,12 +330,12 @@ function getType(uglyArray) {
     'unary-postfix': unaryPostfix,
     'binary': binary,
     'conditional': conditional,
-    'call': callFunction,
+    'call': skipParent,
     'new': reportError,
     'dot': getProp,
     'sub': getElem,
     'defun': reportError,
-    'function': reportError,
+    'function': function(){return 'function';},
     'return': reportError,
     'continue': reportError,
     'break': reportError,
@@ -453,7 +462,7 @@ function getType(uglyArray) {
     getNextNode: function() {
       this.index += 1;
       var nextNode = this.nodes[this.index]; 
-      if (Nonymous.debug) {
+      if (Nonymous.debug === 'trace') {
         console.log("Nonymous next node "+getType(nextNode), {nextNode: nextNode});  
       }
       
@@ -495,10 +504,11 @@ function getType(uglyArray) {
   function convertToName(infos) {
     
     var name = "";
+    var callName = "";
     for(var i = 0; i < infos.length; i++) {
       var info = infos[i];
       if (info.isCall) {
-        name = name || name + info.id + '(' + info.argSummary + ')';
+        callName = info.id + '(' + info.argSummary + ')';
         continue;
       }
       if (name.isSameAs) {
@@ -520,7 +530,9 @@ function getType(uglyArray) {
         name += info.isContributesTo ? Nonymous.isContributesToSep : "";  
       }
     }
-    
+    if (!name) {
+      name = callName; // we use function-call only if we have nothing else
+    }
     return name;
   }
   
@@ -562,7 +574,7 @@ function getType(uglyArray) {
       functionInfo.id = getNameExpression(functionInfo.parent);
       summary.push(functionInfo);
     }
-    if (Nonymous.debug) {
+    if (Nonymous.debug === 'trace') {
       console.log("Nonymous summary ", summary);  
     }
     

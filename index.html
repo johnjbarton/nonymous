@@ -9,7 +9,7 @@ var loadAndTest = {
     var ast = exports.parse(src, false, ".loc");
     
     // and search the resulting syntax tree for function body nodes.
-    var infos = Nonymous.getNames(ast);
+    var infos = Nonymous.getNames(ast, true);
     return infos;
   },
   
@@ -210,6 +210,37 @@ function foo() {
 }
 var bar = function bax() {
   return 2;
+}
+</pre>
+</td>
+</tr>
+<tr>
+  <td>
+    <pre class="output"></pre>
+  </td>
+  <td>
+<pre class="input" id="callNoAssign">
+// nested function call with no assignment
+function callNoAssign() {
+  this.fileClient.fetchChildren(parentItem.ChildrenLocation).then( 
+				dojo.hitch(this, function(children) {
+					mUtil.processNavigatorParent(parentItem, children);
+					onComplete(children);
+				})
+			);
+}
+</pre>
+</td>
+</tr>
+<tr>
+  <td>
+    <pre class="output"></pre>
+  </td>
+  <td>
+<pre class="input" id="otherArgAlsoFunction">
+// function in argument with another function argument
+function otherArgAlsoFunction() {
+  this._convertDelimiter(text, function(t) {clipboadText.push(t);}, function() {clipboadText.push(delimiter);});
 }
 </pre>
 </td>
