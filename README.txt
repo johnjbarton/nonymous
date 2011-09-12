@@ -12,7 +12,7 @@ The result is an array of {name: string, line: number, col: number}.
 
 //----------------------------------------------------------------------------------
 
-Demo page: http://johnjbarton.github.com/Nonymous/index.html
+Demo page: http://johnjbarton.github.com/nonymous/index.html
 
 //----------------------------------------------------------------------------------
 
