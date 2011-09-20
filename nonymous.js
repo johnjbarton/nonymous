@@ -34,11 +34,13 @@ var Nonymous = {
     isPartOfSep: '.',
     isContributesToSep: '<',
     isInArgSummarySep: '^',
-    argSummaryClip: 9,
+    isScopedSep: '/',
+    isPropertySep: '.',
+    argSummaryClip: 15,
 };
 
-function getType(statement) {
-  return statement[0] ? statement[0].toString(): null;  // if embed_tokens === true, type is NodeWithToken 
+function getType(uglyArray) {
+  return uglyArray[0] ? uglyArray[0].toString(): null;  // if embed_tokens === true, type is NodeWithToken 
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -103,8 +105,11 @@ function getType(statement) {
     for (var i = 0; i < cases.length; i++) {
       var aCase = cases[i];
       // ['case', 'condition',  'block']
-      var caseStatement = ['case', getType(aCase), aCase[1]];
+      var caseStatement = ['case', aCase[0], ['block', aCase[1]] ];
       caseStatements.push(caseStatement);
+      if (Nonymous.debug && aCase.length > 2) {
+        console.error("Nonymous a case statement with more than 2 sub nodes", aCase);
+      }
     }
     seekFunctionsInStatements(caseStatements);
   };
@@ -120,6 +125,32 @@ function getType(statement) {
         seekFunctionsInStatement(decl);
       }  // else declaration with no initializer, eg  var foo; 
     }
+  };
+  //-----------------------------------------------------------------------------------------------
+  // Hierarchical naming: walk up through the parents to find scopes
+  function  getHierarchyName(namingStack) {
+    var scopes = [];
+    var prevType = "";
+    namingStack.forEach(function findScope(uglyArray){
+        var type = getType(uglyArray);
+        if (Nonymous.debug === 'trace') {
+          console.log("getHierarchyName found "+type, uglyArray);
+        }
+        var scopeName; 
+        if (type === 'function') {
+          scopeName = uglyArray[0].nonymousLocalName + Nonymous.isScopedSep;
+        } else if (prevType === 'object' && type === 'pair') {
+          scopeName = uglyArray[1]+ Nonymous.isPropertySep; // literal
+        }
+        if (scopeName) {
+          if (Nonymous.debug === 'trace') {
+            console.log("getHierarchyName scopeName "+scopeName, uglyArray);
+          }
+          scopes.push(scopeName);
+        }
+        prevType = type;
+      });
+    return scopes.reverse();
   };
   //-----------------------------------------------------------------------------------------------
   // To find functions we walk the syntax tree from the root downward.
@@ -164,14 +195,15 @@ function getType(statement) {
     'switch': ['expr', NODE, 'cases', CASES],
     'label': ['name', LITERAL],
     'case': ['condition', NODE, 'block', NODE],  // ast is dynamically extended to add this node
+    'throw': ['expr', NODE]
    };
 
   //-----------------------------------------------------------------------------------------------
 
   // As we walk down we find functions and process them into names here.
-  //
+  //  statement type is 'function' or 'defun'
   function setFunctionName(statement) {
-    if (Nonymous.debug) {
+    if (Nonymous.debug === 'trace') {
       var msg = "setFunctionName found a function when naming stack depth "+namingStack.length+"[";
       namingStack.forEach(function pushName(uglyArray){
         msg += getType(uglyArray)+", ";
@@ -179,29 +211,43 @@ function getType(statement) {
       msg += "]";
       console.log(msg, {namingStack:namingStack});
     }
-    var name = Nonymous.getExpressionName(statement, namingStack.slice(0).reverse());
-    if (Nonymous.debug) {
-      console.log(" and the name is.... "+name);
+    var name = statement[1];
+    if (!name) { // anonymous function
+      var nameObj = Nonymous.getExpressionName(statement, namingStack.slice(0).reverse());
+      name = nameObj.localName;
+      fullName = nameObj.fullName;
+    }
+    
+    if (Nonymous.debug === 'trace') {
+      console.log(" and the name is.... "+fullName);
     }
     var loc = (statement.loc || statement[0]).start;
-    Nonymous.names.push({name:name, line: loc.line, col: loc.col, pos: loc.pos});
+    Nonymous.names.push({name:fullName, line: loc.line, col: loc.col, pos: loc.pos});
+    statement[0].nonymousLocalName = name;  // save our localName result for hierarchy naming
   }
   
   function getBranches(statement) {
-    return typeToBranch[getType(statement)];
+    var statementType = getType(statement);
+    var branches = typeToBranch[statementType];
+    if (!branches) {
+      if (Nonymous.debug) {
+        console.log("Nonymous ERROR: no branches for "+statementType+" statement "+statement);
+      }
+      return;
+    }
+    return branches;
   }
  
   function seekFunctionsInStatement(statement) {
-    if (getType(statement) === 'function') {
+    var type = getType(statement);
+    if (type === 'function' || type === 'defun') {
       setFunctionName(statement);
     }
 
     var branches = getBranches(statement);
     if (!branches) {
-      console.log("Nonymous ERROR: no branches for statement "+statement);
       return;
     }
-    
     // establish the current parent for the branch processing
     pushParent(statement);  
     
@@ -231,9 +277,26 @@ function getType(statement) {
   // ----------------------------------------------------------------------------------------------
   // API: 
   //  @param: ast output of UglifyJS parser-js parse.
+  //  @param: true report errors, 'trace' log trace, else suppress
+  //  @param: overrides { isPartOfSep: '.',
+  //  isContributesToSep: '<',
+  //  isInArgSummarySep: '^',
+  //  isScopedSep: '/',
+  //  isPropertySep: '.',
+  //  argSummaryClip: 15,
+  //  }
   //  @return: [{name: "foo", line: 4, col: 43, pos: 120}, ...]
-  Nonymous.getNames = function(ast) {
+  Nonymous.getNames = function(ast, debug, overrides) {
     Nonymous.names = [];
+    Nonymous.debug = debug;
+    if (overrides) {
+      var keys = Object.keys(overrides);
+      keys.forEach(function overrideOne(key) {
+        if (Nonymous.hasOwnProperty(key)) {
+          Nonymous[key] = overrides[key];
+        }
+      });
+    }
     seekFunctionsInStatements(ast[1]); // "toplevel" is one statement
     return Nonymous.names;
   };
@@ -257,9 +320,19 @@ function getType(statement) {
     // or just return 'failed'
   };
   
+  // The type node is not useful in forming a name
+  var skipParent = function(uglyArray) {
+    return "";
+  }
+  
   function generateName(uglyArray) {
     var generator = parentTypeToExpressionGenerator[getType(uglyArray)];
-    return generator(uglyArray);
+    if (generator) {
+      return generator(uglyArray);
+    } else {
+      console.error("Nonymous: no expression generator for "+getType(uglyArray), uglyArray);
+      return "";
+    }
   }
   var unaryPrefix = function(uglyArray) {
     return uglyArray[1] + generateName(uglyArray[2]);
@@ -311,12 +384,12 @@ function getType(statement) {
     'unary-postfix': unaryPostfix,
     'binary': binary,
     'conditional': conditional,
-    'call': callFunction,
+    'call': skipParent,
     'new': reportError,
     'dot': getProp,
     'sub': getElem,
     'defun': reportError,
-    'function': reportError,
+    'function': function(){return 'function';},
     'return': reportError,
     'continue': reportError,
     'break': reportError,
@@ -443,7 +516,7 @@ function getType(statement) {
     getNextNode: function() {
       this.index += 1;
       var nextNode = this.nodes[this.index]; 
-      if (Nonymous.debug) {
+      if (Nonymous.debug === 'trace') {
         console.log("Nonymous next node "+getType(nextNode), {nextNode: nextNode});  
       }
       
@@ -482,13 +555,14 @@ function getType(statement) {
     }
   };
   
-  function convertToName(infos) {
+  function convertToName(infos, namingStack) {
     
     var name = "";
+    var callNameInfo;
     for(var i = 0; i < infos.length; i++) {
       var info = infos[i];
       if (info.isCall) {
-        name = name || name + info.id + '(' + info.argSummary + ')';
+        callNameInfo = info;
         continue;
       }
       if (name.isSameAs) {
@@ -510,8 +584,23 @@ function getType(statement) {
         name += info.isContributesTo ? Nonymous.isContributesToSep : "";  
       }
     }
-    
-    return name;
+    var parent; // Hierarchy of the name depends on the consumption node
+    if (!name) {
+      // we use function-call only if we have nothing else
+      name = callNameInfo.id + '(' + callNameInfo.argSummary + ')';
+      parent = callNameInfo.parent;
+    } else {
+      parent = infos[0].parent;
+    }
+    var fullName = name;
+    var parentIndex = namingStack.indexOf(parent);  // the parent used for naming the function
+    parentIndex += 1; // it's parent
+    if (parentIndex < namingStack.length) {  // then we have context to consider
+      var ancestry = getHierarchyName(namingStack.slice(parentIndex));
+      ancestry.push(name);
+      fullName = ancestry.join('');
+    }
+    return {localName: name, fullName: fullName};
   }
   
   var FunctionInfo = function(iter, node) {
@@ -552,11 +641,11 @@ function getType(statement) {
       functionInfo.id = getNameExpression(functionInfo.parent);
       summary.push(functionInfo);
     }
-    if (Nonymous.debug) {
+    if (Nonymous.debug === 'trace') {
       console.log("Nonymous summary ", summary);  
     }
     
-    return convertToName(summary.reverse());
+    return convertToName(summary.reverse(), parents);
   };
   
   if (module) {
