@@ -34,8 +34,11 @@ var Nonymous = {
     isPartOfSep: '.',
     isContributesToSep: '<',
     isInArgSummarySep: '^',
+<<<<<<< HEAD
     isScopedSep: '/',
     isPropertySep: '.',
+=======
+>>>>>>> a1bf94befbd42d7ecdecdafa047309714bd8ef40
     argSummaryClip: 15,
 };
 
@@ -213,6 +216,7 @@ function getType(uglyArray) {
     }
     var name = statement[1];
     if (!name) { // anonymous function
+<<<<<<< HEAD
       var nameObj = Nonymous.getExpressionName(statement, namingStack.slice(0).reverse());
       name = nameObj.localName;
       fullName = nameObj.fullName;
@@ -220,6 +224,13 @@ function getType(uglyArray) {
     
     if (Nonymous.debug === 'trace') {
       console.log(" and the name is.... "+fullName);
+=======
+      name = Nonymous.getExpressionName(statement, namingStack.slice(0).reverse());
+    }
+    
+    if (Nonymous.debug === 'trace') {
+      console.log(" and the name is.... "+name);
+>>>>>>> a1bf94befbd42d7ecdecdafa047309714bd8ef40
     }
     var loc = (statement.loc || statement[0]).start;
     Nonymous.names.push({name:fullName, line: loc.line, col: loc.col, pos: loc.pos});
@@ -246,6 +257,12 @@ function getType(uglyArray) {
 
     var branches = getBranches(statement);
     if (!branches) {
+<<<<<<< HEAD
+=======
+      if (Nonymous.debug) {
+        console.log("Nonymous ERROR: no branches for statement "+statement);
+      }
+>>>>>>> a1bf94befbd42d7ecdecdafa047309714bd8ef40
       return;
     }
     // establish the current parent for the branch processing
@@ -278,6 +295,7 @@ function getType(uglyArray) {
   // API: 
   //  @param: ast output of UglifyJS parser-js parse.
   //  @param: true report errors, 'trace' log trace, else suppress
+<<<<<<< HEAD
   //  @param: overrides { isPartOfSep: '.',
   //  isContributesToSep: '<',
   //  isInArgSummarySep: '^',
@@ -297,6 +315,12 @@ function getType(uglyArray) {
         }
       });
     }
+=======
+  //  @return: [{name: "foo", line: 4, col: 43, pos: 120}, ...]
+  Nonymous.getNames = function(ast, debug) {
+    Nonymous.names = [];
+    Nonymous.debug = debug;
+>>>>>>> a1bf94befbd42d7ecdecdafa047309714bd8ef40
     seekFunctionsInStatements(ast[1]); // "toplevel" is one statement
     return Nonymous.names;
   };
@@ -558,11 +582,19 @@ function getType(uglyArray) {
   function convertToName(infos, namingStack) {
     
     var name = "";
+<<<<<<< HEAD
     var callNameInfo;
     for(var i = 0; i < infos.length; i++) {
       var info = infos[i];
       if (info.isCall) {
         callNameInfo = info;
+=======
+    var callName = "";
+    for(var i = 0; i < infos.length; i++) {
+      var info = infos[i];
+      if (info.isCall) {
+        callName = info.id + '(' + info.argSummary + ')';
+>>>>>>> a1bf94befbd42d7ecdecdafa047309714bd8ef40
         continue;
       }
       if (name.isSameAs) {
@@ -584,6 +616,7 @@ function getType(uglyArray) {
         name += info.isContributesTo ? Nonymous.isContributesToSep : "";  
       }
     }
+<<<<<<< HEAD
     var parent; // Hierarchy of the name depends on the consumption node
     if (!name) {
       // we use function-call only if we have nothing else
@@ -601,6 +634,12 @@ function getType(uglyArray) {
       fullName = ancestry.join('');
     }
     return {localName: name, fullName: fullName};
+=======
+    if (!name) {
+      name = callName; // we use function-call only if we have nothing else
+    }
+    return name;
+>>>>>>> a1bf94befbd42d7ecdecdafa047309714bd8ef40
   }
   
   var FunctionInfo = function(iter, node) {
