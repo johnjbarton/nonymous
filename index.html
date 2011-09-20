@@ -11,11 +11,7 @@ var loadAndTest = {
     var ast = exports.parse(src, false, ".loc");
     
     // and search the resulting syntax tree for function body nodes.
-<<<<<<< HEAD
     var infos = Nonymous.getNames(ast, true, loadAndTest.overrides);
-=======
-    var infos = Nonymous.getNames(ast, true);
->>>>>>> a1bf94befbd42d7ecdecdafa047309714bd8ef40
     return infos;
   },
   
@@ -99,25 +95,6 @@ var loadAndTest = {
 
 var exports = {};
 
-<<<<<<< HEAD
-=======
-window.addEventListener('load', function testAll() {
-    function analyzer(input, output) {
-      return function(event) {
-        output.textContent = loadAndTest.analyzeOne(input);  
-      }
-    }
-
-  var outputs = document.getElementsByClassName('output');
-  var inputs = document.getElementsByClassName('input');
-  for(var i = 0; i < inputs.length; i++) {
-    var input = inputs[i];
-    var output = outputs[i];
-    var analyzeRow = analyzer(input, output);
-    input.addEventListener('click', analyzeRow, true);
-    analyzeRow();
-  }
->>>>>>> a1bf94befbd42d7ecdecdafa047309714bd8ef40
 
 function hookAndTestAll() {
   loadAndTest.hookAll();
@@ -289,7 +266,6 @@ function otherArgAlsoFunction() {
 </pre>
 </td>
 </tr>
-<<<<<<< HEAD
 <tr>
   <td>
     <pre class="output"></pre>
@@ -312,8 +288,6 @@ function otherArgAlsoFunction() {
 </pre>
 </td>
 </tr>
-=======
->>>>>>> a1bf94befbd42d7ecdecdafa047309714bd8ef40
 </tbody>
 </table>
 <br>
