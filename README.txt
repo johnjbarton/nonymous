@@ -12,6 +12,11 @@ The result is an array of {name: string, line: number, col: number}.
 
 //----------------------------------------------------------------------------------
 
+Application example, Orion Editor Pluging (with demos):
+https://github.com/johnjbarton/outliner
+
+//----------------------------------------------------------------------------------
+
 Demo page: http://johnjbarton.github.com/nonymous/index.html
 
 //----------------------------------------------------------------------------------
